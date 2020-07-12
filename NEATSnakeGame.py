@@ -16,6 +16,11 @@ KEY_DOWN = 1
 KEY_LEFT = 2
 KEY_RIGHT = 3
 
+DEATH_BY_WALL = 0
+DEATH_BY_BODY = 1
+DEATH_BY_POINT = 2
+
+CREAM = (210, 210, 200)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
 WHITE = (255, 255, 255)
@@ -56,9 +61,11 @@ class Snake:
         self.direction_gone = []
         self.food_location = [(food.x, food.y)]
 
+        self.death_reason = -1
+
 
     def draw(self):
-        WIN.fill(BLUE)
+        WIN.fill(CREAM)
         for snake in self.snake_body:
             pygame.draw.rect(WIN, BLACK, [snake[0], snake[1], SNAKE_BLOCK, SNAKE_BLOCK])
 
@@ -169,7 +176,7 @@ class Snake:
     def draw_food_line(self, vision):
     	for i in range(0, 24, 3):
     		if vision[i] == 1:
-    			pygame.draw.line(WIN, (255, 0, 0), (self.x+SNAKE_BLOCK/2, self.y+SNAKE_BLOCK/2), (self.food.x+SNAKE_BLOCK/2, self.food.y+SNAKE_BLOCK/2), 5)
+    			pygame.draw.line(WIN, GREEN, (self.x+SNAKE_BLOCK/2, self.y+SNAKE_BLOCK/2), (self.food.x+SNAKE_BLOCK/2, self.food.y+SNAKE_BLOCK/2), 5)
 
 
 
@@ -179,7 +186,7 @@ class Food:
         self.y = round(random.randrange(0, WIN_HEIGHT - SNAKE_BLOCK) / SNAKE_BLOCK) * SNAKE_BLOCK
 
     def draw(self):
-        pygame.draw.rect(WIN, GREEN, [self.x, self.y, SNAKE_BLOCK, SNAKE_BLOCK])
+        pygame.draw.rect(WIN, RED, [self.x, self.y, SNAKE_BLOCK, SNAKE_BLOCK])
 
     def eaten_by(self, snake):
         if self.x == snake.x and self.y == snake.y:
@@ -191,11 +198,11 @@ def your_score(score):
     WIN.blit(value, [WIN_WIDTH - 10 - value.get_width(), 10])
 
 def show_data(score, alive, gen):
-    value = SCORE_FONT.render("Your Score: " + str(score), True, YELLOW)
+    value = SCORE_FONT.render("Total Score: " + str(score), True, BLUE)
     WIN.blit(value, [0, 0])
-    value = SCORE_FONT.render("Alive: " + str(alive), True, YELLOW)
+    value = SCORE_FONT.render("Alive: " + str(alive), True, BLUE)
     WIN.blit(value, [0, 20])
-    value = SCORE_FONT.render("Gen: " + str(gen), True, YELLOW)
+    value = SCORE_FONT.render("Gen: " + str(gen), True, BLUE)
     WIN.blit(value, [0, 40])
 
 def main(genomes, config):
@@ -262,6 +269,7 @@ def main(genomes, config):
                 nets.pop(x)
                 ge.pop(x)
                 foods.pop(x)
+                snake.death_reason = DEATH_BY_POINT
                 snake.dead = True
 
 
@@ -272,6 +280,7 @@ def main(genomes, config):
                     nets.pop(x)
                     ge.pop(x)
                     foods.pop(x)
+                    snake.death_reason = DEATH_BY_WALL
                     snake.dead = True
 
             if snake.self_collide():
@@ -280,6 +289,7 @@ def main(genomes, config):
                 nets.pop(x)
                 ge.pop(x)
                 foods.pop(x)
+                snake.death_reason = DEATH_BY_BODY
                 snake.dead  =True
 
             snake.draw()
@@ -310,8 +320,14 @@ def main(genomes, config):
             break
 
     mfx = [x.foods_eaten for x in snake_score]
+    dth = [x.death_reason for x in snake_score]
     mx = max(mfx)
+    print()
     print("Max food eaten by snake #{} is {}".format(mfx.index(mx), mx))
+    print("Death by wall: {}".format(dth.count(DEATH_BY_WALL)))
+    print("Death by body collide: {}".format(dth.count(DEATH_BY_BODY)))
+    print("Death by life point: {}".format(dth.count(DEATH_BY_POINT)))
+    print()
 
 def run(config_path):
     config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction,neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path)
